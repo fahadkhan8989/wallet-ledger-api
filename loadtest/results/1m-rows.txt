@@ -1,0 +1,13 @@
+
+scenario  endpoint      count   p50 ms   p99 ms   max ms
+mixed     balance      165531    14.81    45.66  1261.57
+mixed     credit        98342    17.10    64.44  1280.48
+mixed     debit         65964    17.11    64.57  1280.71
+hot       balance       12771     1.19     3.93    31.53
+hot       credit         7627   198.76   794.37   994.93
+hot       debit          5022   198.61   863.04   990.34
+others    balance       62759     1.15     3.55    18.71
+others    credit        37564     2.81    17.03   539.06
+others    debit         24895     2.82    17.59   220.76
+
+total requests: 480475 (5052/s), unexpected statuses: 0

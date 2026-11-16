@@ -1,0 +1,19 @@
+
+endpoint  user type   count   p50 ms  p99 ms  max ms
+balance   whale        400    0.70    2.57    3.48
+balance   normal       400    0.65    1.83    2.89
+credit    whale        400    1.79    3.83    4.52
+credit    normal       400    1.84    3.62    4.61
+debit     whale        400    1.88    4.06   17.54
+debit     normal       400    1.86    3.32    5.81
+
+unexpected statuses: 0
+    query    |    user_id    | ledger_rows | median_ms 
+-------------+---------------+-------------+-----------
+ credit      | seed_whale_02 |      152509 |     0.061
+ credit      | seed_u099000  |         203 |     0.062
+ debit       | seed_whale_02 |      152509 |     0.060
+ debit       | seed_u099000  |         203 |     0.061
+ get_balance | seed_whale_02 |      152509 |     0.021
+ get_balance | seed_u099000  |         203 |     0.021
+

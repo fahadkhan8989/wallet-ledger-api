@@ -1,0 +1,91 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ledger
+      POSTGRES_PASSWORD: ledger
+      POSTGRES_DB: ledger
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    # Docker's default 64MB /dev/shm is too small for Postgres parallel
+    # queries over 10M rows (seed and reconcile).
+    shm_size: 1g
+    healthcheck:
+      # -h 127.0.0.1: only report ready once the real server accepts TCP,
+      # not the temporary server the image runs while applying schema.sql.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U ledger -d ledger"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  api:
+    build: ./api
+    ports:
+      - "8080:8080"
+    environment:
+      API_TOKEN: ${API_TOKEN:-recruitment-test-token}
+      DATABASE_URL: postgres://ledger:ledger@db:5432/ledger
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/health || exit 1"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # docker compose run --rm seed   (SEED_ROWS=1000000 for a smaller seed)
+  seed:
+    profiles: [tools]
+    image: postgres:17-alpine
+    environment:
+      PGPASSWORD: ledger
+      SEED_ROWS: ${SEED_ROWS:-10000000}
+    volumes:
+      - ./db:/db:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        start=$$(date +%s)
+        psql -h db -U ledger -d ledger -v rows=$$SEED_ROWS -f /db/seed.sql
+        echo "seed finished in $$(( $$(date +%s) - start )) seconds"
+
+  # docker compose run --rm test
+  test:
+    profiles: [tools]
+    build: ./api
+    environment:
+      BASE_URL: http://api:8080
+      API_TOKEN: ${API_TOKEN:-recruitment-test-token}
+      DATABASE_URL: postgres://ledger:ledger@db:5432/ledger
+    volumes:
+      - ./api/test:/app/test:ro
+      - ./db:/app/db:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    command: ["node", "--test", "--test-concurrency=1", "test/*.test.js"]
+
+  # docker compose run --rm loadtest   (after seeding)
+  loadtest:
+    profiles: [tools]
+    image: grafana/k6:1.0.0
+    environment:
+      BASE_URL: http://api:8080
+      API_TOKEN: ${API_TOKEN:-recruitment-test-token}
+    volumes:
+      - ./loadtest:/scripts:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    command: ["run", "--quiet", "/scripts/load.js"]
+
+volumes:
+  pgdata:
