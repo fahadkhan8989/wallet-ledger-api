@@ -45,8 +45,11 @@ WHERE u.balance <> l.total;          -- expect 0 rows
 - **Smaller seed:** `SEED_ROWS=1000000 docker compose run --rm seed`.
 - **Fresh database:** `docker compose down -v`. The seed refuses to run twice, because the
   ledger is append-only.
-- **Test tooling runs in containers on the compose network.** The database port is not
-  published, so it can't clash with a local PostgreSQL.
+- **Test tooling runs in containers on the compose network,** so nothing but Docker is needed.
+- **Database access from your machine** (DBeaver, psql, …): `localhost:5433`, database,
+  user and password all `ledger`, e.g. `postgresql://ledger:ledger@localhost:5433/ledger`.
+  It's bound to localhost only, and uses 5433 so it doesn't clash with a local PostgreSQL.
+  If 5433 is taken, start with `DB_PORT=6543 docker compose up`.
 
 ```bash
 curl -s -X POST localhost:8080/credit -H 'Authorization: Bearer recruitment-test-token' \
