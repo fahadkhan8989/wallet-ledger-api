@@ -8,6 +8,8 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    ports:
+      - "5433:5432"
     # Docker's default 64MB /dev/shm is too small for Postgres parallel
     # queries over 10M rows (seed and reconcile).
     shm_size: 1g
